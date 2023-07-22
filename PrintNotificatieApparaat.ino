@@ -29,8 +29,8 @@ const int PrinterLEDs[]={D1,D2,D3,D4};
 bool IsPRINTING[NUMPRINTERS];
 bool IsMonitoring[NUMPRINTERS];
 
-// URL to the PHP script somewhere online that sends emails
-#define WEB_MAILSENDER   "https://yoursite.com/sendmail.php"
+// URL to my PHP script somewhere online that sends emails
+#define WEB_MAILSENDER   "https://marcelv.net/IoT/sendmail.php"
 
 ESP8266WiFiMulti D1Mini;
 
@@ -54,15 +54,14 @@ void loop() {
   WiFiClient client;
   HTTPClient http;   
 
-  for(int i=0; i<sizeof(Printers) / sizeof(Printers[0])/4; i++) {
+  for(int i=0; i<NUMPRINTERS; i++) {
    if(strcmp(Printers[i*4],PRINTERTYPE_MK4)==0) {
     // This is an MK4 printer
     http.begin(client,Printers[i*4+2]);
     http.addHeader("X-Api-Key", Printers[i*4+3]);  
       
     int httpCode = http.GET();
-    if(httpCode > 0) {
-     digitalWrite(PrinterLEDs[i],LOW);
+    if(httpCode > 0) {     
      String payload = http.getString();
      DynamicJsonDocument doc(1024);
      deserializeJson(doc, payload);
@@ -77,7 +76,7 @@ void loop() {
      }
     } 
     else {
-     // Printer is switched off
+     // MK4 printer is switched off
      IsPRINTING[i]=false;
      digitalWrite(PrinterLEDs[i],LOW);
      Offline(i);
@@ -86,8 +85,9 @@ void loop() {
    }
    else {
     // Octoprint printer
+    Serial.printf("Check Octopi-printer %s, URL: %s\r\n",Printers[i*4+1],Printers[i*4+2]);
     http.begin(client,Printers[i*4+2]);
-    http.addHeader("X-Api-Key", Printers[i*4+3]);  
+    http.addHeader("X-Api-Key", Printers[i*4+3]);      
     int httpCode = http.GET();    
     if(httpCode > 0) {
      String payload = http.getString();     
@@ -98,7 +98,7 @@ void loop() {
       IsMonitoring[i]=false; 
       SendMail(Printers[i*4+1]);    
      }
-
+     //Serial.println(payload);
      if(payload.indexOf("\"Offline") > 0) { // Note: no trailing " here!
       digitalWrite(PrinterLEDs[i],LOW);
       Offline(i);
@@ -111,10 +111,11 @@ void loop() {
     }
    }
    http.end();
-  }//printers loop 
+  }//printers loop
+  
+  
  }
 
- // Blink LED's of printers that are printing
  for(int i=0; i<10; i++) {
   for(int p=0; p<NUMPRINTERS; p++) digitalWrite(PrinterLEDs[p],IsPRINTING[p]?HIGH:LOW);
   delay(500);
