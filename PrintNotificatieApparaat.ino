@@ -37,16 +37,24 @@ ESP8266WiFiMulti D1Mini;
 void setup() {
  for(int i=0; i<NUMPRINTERS; i++) {
   pinMode(PrinterLEDs[i],OUTPUT);
-  digitalWrite(PrinterLEDs[i],HIGH);
+  digitalWrite(PrinterLEDs[i],LOW);
  }
+ for(int j=0; j<2; j++) {
+  for(int i=0; i<NUMPRINTERS; i++) {    
+   digitalWrite(PrinterLEDs[i],HIGH);
+   delay(100);
+   digitalWrite(PrinterLEDs[i],LOW);
+   delay(100);
+  }
+ }
+ for(int i=0; i<NUMPRINTERS; i++) digitalWrite(PrinterLEDs[i],HIGH); 
  
  Serial.begin(115200);
  WiFi.mode(WIFI_STA);
  D1Mini.addAP(WIFI_SSID, WIFI_PASSWORD);
  Serial.println("Connected to WiFi"); 
 
- for(int i=0; i<NUMPRINTERS; i++) 
-  digitalWrite(PrinterLEDs[i],LOW); 
+ for(int i=0; i<NUMPRINTERS; i++) digitalWrite(PrinterLEDs[i],LOW); 
 }
 
 void loop() {     
