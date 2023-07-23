@@ -39,14 +39,8 @@ void setup() {
   pinMode(PrinterLEDs[i],OUTPUT);
   digitalWrite(PrinterLEDs[i],LOW);
  }
- for(int j=0; j<2; j++) {
-  for(int i=0; i<NUMPRINTERS; i++) {    
-   digitalWrite(PrinterLEDs[i],HIGH);
-   delay(100);
-   digitalWrite(PrinterLEDs[i],LOW);
-   delay(100);
-  }
- }
+ RunningLight(2);
+ 
  for(int i=0; i<NUMPRINTERS; i++) digitalWrite(PrinterLEDs[i],HIGH); 
  
  Serial.begin(115200);
@@ -130,6 +124,7 @@ void loop() {
   for(int p=0; p<NUMPRINTERS; p++) digitalWrite(PrinterLEDs[p],LOW);
   delay(500);
  }
+ RunningLight(1);
  for(int p=0; p<NUMPRINTERS; p++) digitalWrite(PrinterLEDs[p],IsPRINTING[p]?HIGH:LOW);  
 }
 
@@ -150,4 +145,15 @@ void SendMail(const char *PrinterName) {
   String payload = http.getString();
   Serial.println(payload);
   http.end();
+}
+
+void RunningLight(int n) {
+ for(int j=0; j<n; j++) {
+  for(int i=0; i<NUMPRINTERS; i++) {    
+   digitalWrite(PrinterLEDs[i],HIGH);
+   delay(100);
+   digitalWrite(PrinterLEDs[i],LOW);
+   delay(100);
+  }
+ }
 }
