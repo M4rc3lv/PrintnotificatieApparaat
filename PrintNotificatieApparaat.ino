@@ -30,7 +30,7 @@ bool IsPRINTING[NUMPRINTERS];
 bool IsMonitoring[NUMPRINTERS];
 
 // URL to my PHP script somewhere online that sends emails
-#define WEB_MAILSENDER   "https://marcelv.net/IoT/sendmail.php"
+#define WEB_MAILSENDER   "https://yourwebserver.com/sendmail.php"
 
 ESP8266WiFiMulti D1Mini;
 
