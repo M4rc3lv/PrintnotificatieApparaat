@@ -28,23 +28,27 @@
 #define BLAUW  (LEDStrip.Color(0,0,80))
 #define ORANJE (LEDStrip.Color(40,20,0))
 
-// Array of all my 3D printers
-// Every row (printer) has the following 3 elements:
-// Human-friendly name of printer (without spaces), IP address of printer, Password
-// The password is the password of the user "maker" of the MK4/MINI or the Octoprint API key
+#define PRINTERTYPE_OCTOPI "OCTO"
+#define PRINTERTYPE_MK4 "MK4"
+
+// Array of all your 3D printers
+// Every row (printer) has the following 4 elements:
+//  Human-friendly name of printer, I address of printer, Password, Printer type (MK4 or Octopi)
+// The password is the password of the user "maker" of the MK4. 
 const char *Printers[]={
- "Printer1", "http://192.168.0.11/api/job", "924DCEB3BEAPI-Key8EBBCAC6CF631F",
- "Printer2", "http://192.168.0.10/api/job", "5B9379API-KeyBB981B1C728",
- "MK4","http://192.168.0.49:80/api/job","hdAPI-KeyDfHpN",
- "MK4-2","http://192.168.0.50:80/api/job","wAPI-Key",
- "MINI","http://192.168.0.4:80/api/job","XFMAPI-Keyg2y"
+ "Printer1", "http://192.168.0.11/api/job", "924DCEB3BEAPI-Key8EBBCAC6CF631F",PRINTERTYPE_OCTOPI,
+ "Printer2", "http://192.168.0.10/api/job", "5B9379API-KeyBB981B1C728",PRINTERTYPE_OCTOPI,
+ "MK4","http://192.168.0.49:80/api/job","hdAPI-KeyDfHpN",PRINTERTYPE_MK4,
+ "MK4-2","http://192.168.0.50:80/api/job","wAPI-Key",PRINTERTYPE_MK4,
+ "MINI","http://192.168.0.4:80/api/job","XFMAPI-Keyg2y",PRINTERTYPE_MK4
 };
-const int NUMPRINTERS=sizeof(Printers) / sizeof(Printers[0])/3;
+const int NUMPRINTERS=sizeof(Printers) / sizeof(Printers[0])/4;
 
 bool IsPRINTING[NUMPRINTERS];
 bool IsMonitoring[NUMPRINTERS];
 bool IsOranje[NUMPRINTERS];
 String Files[NUMPRINTERS]; // Bewaar bestandsnamen zodat je die in de mail erbij kunt zetten later
+bool IsFilamentMailVerstuurd[NUMPRINTERS];
 
 // URL to my PHP script somewhere online that sends emails
 #define WEB_MAILSENDER   "https://marcelv.net/IoT/sendmail.php"
@@ -75,33 +79,38 @@ void loop() {
   
   for(int i=0; i<NUMPRINTERS; i++) {         
    // This is an MK4 printer    
-   http.begin(client,Printers[i*3+1]);
-   http.addHeader("X-Api-Key", Printers[i*3+2]);
-     
+   http.begin(client,Printers[i*4+1]);
+   http.addHeader("X-Api-Key", Printers[i*4+2]);
+        
    int httpCode = http.GET();
    if(httpCode > 0) {     
     String payload = http.getString();
     DynamicJsonDocument doc(1024);
     deserializeJson(doc, payload);
     // MK4: "State":"Operational";
-    // Octopri: 
+    // Octoprint:       
     String Status = doc["state"].as<String>();
     bool IsPrinting = Status.indexOf("Printing")>=0; 
     IsOranje[i]=Status.indexOf("Operational")>=0; 
-    Serial.printf("Status %d (%s): %s\r\n",i,Printers[i*3],Status.c_str());
+    
     if(IsPrinting) {
+     bool IsWaiting=IsWaitingForColourChange(i);
+     if(IsWaiting && !IsFilamentMailVerstuurd[i]) {
+      SendMail(Printers[i*4],Files[i].c_str(),true);   
+      IsFilamentMailVerstuurd[i]=true; 
+     }
+     
      IsMonitoring[i]=IsPRINTING[i]=true; ZetLEDKleur(i+1,GROEN);
      String s = doc["file"]["name"].as<String>(); // MK4 en MINI
      if(s=="null") s=doc["job"]["file"]["name"].as<String>(); // Octoprint
-     Files[i]=s;     
-     Serial.printf("Bestand: %s\r\n",Files[i].c_str());     
+     Files[i]=s;             
     }
-    else {ZetLEDKleur(i+1,IsOranje[i]? ORANJE : ROOD);}
+    else {ZetLEDKleur(i+1,IsOranje[i]? ORANJE : ROOD); IsFilamentMailVerstuurd[i]=false;} 
     if(!IsPrinting && IsMonitoring[i]) {
      // Print is klaar: verstuur alert
      IsMonitoring[i]=false; 
      IsPRINTING[i]=false;
-     SendMail(Printers[i*3],Files[i].c_str());    
+     SendMail(Printers[i*4],Files[i].c_str(),false);    
      Files[i]="";
     }
    } 
@@ -110,6 +119,7 @@ void loop() {
     IsPRINTING[i]=false;
     ZetLEDKleur(i+1,ROOD);
     Offline(i);
+    IsOranje[i]=false;
    }
    http.end();
 
@@ -143,16 +153,70 @@ void ZetLEDKleur(int IX,int Kleur) {
 }
 
 void Offline(int PrinterIX) { 
- Serial.printf("Printer %s is offline.",Printers[PrinterIX*3]);
+ Serial.printf("Printer %s is offline.",Printers[PrinterIX*4]);
  Serial.println();
 }
 
-void SendMail(const char *PrinterName,const char *Bestand) {
+bool IsWaitingForColourChange(int PrinterIX) {
+ static double PrevCompletion[NUMPRINTERS];
+ String URL = Printers[PrinterIX*4+1];
+    
+ if(Printers[PrinterIX*4+3]==PRINTERTYPE_MK4) { 
+  // Prusa printer
+  URL.replace("job","printer");
+  WiFiClient client; 
+  HTTPClient http;   
+  http.begin(client,URL);
+  http.addHeader("X-Api-Key", Printers[PrinterIX*4+2]);
+  int code=http.GET(); 
+  String payload = http.getString();
+  DynamicJsonDocument doc(1024);
+  deserializeJson(doc, payload);
+  http.end();
+  return doc["telemetry"]["material"].as<String>()=="---";
+ }
+ else {
+  // Octopi printer - we kunnen alleen de temperatuur bekijken om te zien of er een colour change nodig is
+  // http://192.168.0.10:80/api/printer?history=true&limit=10
+
+ /*Kijk naar progress.completion en naar progress.printtime
+ Indien printtime>0 DAN pas kijken naar compltion (zodat hij niet meteen ah begin mailt)
+ compltion is een double
+ COMPLETION Verandert elke keer. Is getest met ene print van 2 dagen lang*/
+  WiFiClient client; 
+  HTTPClient http;   
+  http.begin(client,URL);
+  http.addHeader("X-Api-Key", Printers[PrinterIX*4+2]);
+  int code=http.GET(); 
+  String payload = http.getString();
+  DynamicJsonDocument doc(1024);
+  deserializeJson(doc, payload);
+  http.end();
+  
+  int pt=doc["progress"]["printTime"];
+  Serial.print("pt=");Serial.println(pt);
+  if(pt>0) {
+   double completion = doc["progress"]["completion"];
+
+   Serial.printf("%lf %lf\r\n",completion,PrevCompletion[PrinterIX]);
+   
+   if(completion==PrevCompletion[PrinterIX]) {
+    PrevCompletion[PrinterIX]=completion;
+    return true;
+   }
+   PrevCompletion[PrinterIX]=completion;
+  }    
+ }
+ return false;
+}
+
+void SendMail(const char *PrinterName,const char *Bestand,bool ColChange) {
   WiFiClientSecure client;
   client.setInsecure(); 
-
+  
   String Url(WEB_MAILSENDER);   
   Url+="?printer="+String(PrinterName)+"&file="+urlEncode(Bestand);
+  if(ColChange) Url+="&colorchange=1";
   HTTPClient http;   
   http.begin(client,Url);
   http.GET();
