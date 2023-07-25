@@ -23,5 +23,9 @@ The ESPduino/D1 Mini file uses standard ESP8266 libraries and a special JSON lib
 <img src="https://raw.githubusercontent.com/M4rc3lv/PrintnotificatieApparaat/main/Docs/email.png" border="1">
 </td></tr></table>
 
+**Version 2 of the device:**
+\
+<img src="https://marcelv.net/data/db262_Versie2.jpg" width="80%">
+
 
 
