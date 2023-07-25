@@ -5,7 +5,7 @@ Features since V2:
 - Include name of file and name of printer in message.
 - Works with 1 or more 3D printers (I use it for 5 printers).
 - Also sends an alert when one of the 3D printers is waiting for a filamant change.
-- Works with Prusa MK4, MINI printers and every Octopritn printer (like my MK3's).
+- Works with Prusa MK4, MINI printers and every Octoprint printer (like my MK3's).
 
 This projects consists of a D1 Mini (ESP8266 based MCU) that is always on and monitors my 3D printers. Whenever a job on a 3D printer completes, the system sends me an email. Version 2 uses a ESPDuino (but you can use any ESP8266 MCU) and has a NeoPixel LED-strip and a buzzer. See the [schematic](https://github.com/M4rc3lv/PrintnotificatieApparaat/blob/main/3Schematic.png).
 
