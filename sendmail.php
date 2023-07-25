@@ -7,7 +7,7 @@ $Naam=$_GET["printer"];
 $Bestand=isset($_GET["file"])? $_GET["file"] : false;
 $ColorChange=isset($_GET["colorchange"])? $_GET["colorchange"] : false;
 
-$to = "marcelveldhuijzen@gmail.com";
+$to = "youremail@example.com";
 $subject = "3D Print is voltooid!";
 $body = "Hoi Marcel,\r\n\r\nJe print-job op printer '$Naam' is voltooid om $currentTime uur.\r\n\r\nGroetjes,\r\nJe 3D-printer.";
 if($Bestand)
