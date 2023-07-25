@@ -1,5 +1,6 @@
 # PrintnotificatieApparaat
-Device that sends me a push message everytime a 3D printer completes a printjob.
+Device that sends me a push message everytime a 3D printer completes a printjob.   
+<img src="https://raw.githubusercontent.com/M4rc3lv/PrintnotificatieApparaat/main/Docs/Device-V1.png" width="300" title="Version 1" align="right">
 Features since V2:
 - Include name of file and name of printer in message.
 - Works with 1 or more 3D printers (I use it for 5 printers).
