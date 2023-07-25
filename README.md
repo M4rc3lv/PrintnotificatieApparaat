@@ -16,8 +16,9 @@ This projects consists of a D1 Mini (ESP8266 based MCU) that is always on and mo
 
 ## Libraries
 The ESPduino/D1 Mini file uses standard ESP8266 libraries and a special JSON library that can be found [here](https://github.com/bblanchon/ArduinoJson.git). Can also be installed using the Arduino IDE itself.
-
-## Example of a message
+\
+\
+**Example of a message:**
 <table><tr><td>
 <img src="https://raw.githubusercontent.com/M4rc3lv/PrintnotificatieApparaat/main/Docs/email.png" border="1">
 </td></tr></table>
